@@ -20,10 +20,10 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="profiler.hpp">
+    <ClInclude Include="fixed-size-allocator.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="fixed-size-allocator.hpp">
+    <ClInclude Include="statistics.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

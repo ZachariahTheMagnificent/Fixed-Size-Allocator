@@ -123,7 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="fixed-size-allocator.hpp" />
-    <ClInclude Include="profiler.hpp" />
+    <ClInclude Include="statistics.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

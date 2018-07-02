@@ -1,10 +1,14 @@
 #include <iostream>
 #include <vector>
 #include <random>
-#include "profiler.hpp"
-#define MULTITHREADING
-//#define USE_CUSTOM_ALLOCATOR
+#include <chrono>
+#include "statistics.hpp"
+//#define MULTITHREADING
+#define USE_CUSTOM_ALLOCATOR
 //#define RESERVE_MEMORY_AHEAD_OF_TIME
+
+using zachariahs_world::math::statistics_type;
+using zachariahs_world::math::get_statistics;
 
 #if defined USE_CUSTOM_ALLOCATOR
 #include "fixed-size-allocator.hpp"
@@ -106,13 +110,15 @@ array_type<type> quick_sort ( const array_type<type>& array )
 
 int main ( )
 {
-	constexpr auto num_tests = 1000;
+	constexpr auto num_tests = 10;
 	constexpr auto num_ints = 10000;
 	constexpr auto num_frames = 100;
 	constexpr auto lowest_int = int { 12 };
 	constexpr auto highest_int = int { 758 };
 
-	auto my_profiler = profiler_type { };
+	using clock = std::chrono::steady_clock;
+
+	auto data_points = std::vector<unsigned long long> { };
 
 	std::cout << "Circular Buffer Allocator benchmark test\n";
 	std::system ( "pause" );
@@ -149,14 +155,19 @@ int main ( )
 		test ( );
 
 		// Beginning of profile
-		my_profiler.start ( );
+
+		auto start = clock::now ( );
 		test ( );
-		my_profiler.end ( );
+		auto end = clock::now ( );
+		auto duration = end - start;
+		auto duration_in_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds> ( duration );
+		auto count = duration_in_nanoseconds.count ( );
+		data_points.push_back ( count );
 
 		std::cout << "Test " << i + 1 << '/' << num_tests << " done!\n";
 	}
 
-	const auto my_profile = my_profiler.flush ( );
+	const auto statistics = get_statistics ( data_points );
 	std::cout << "Programmed with: "
 #if defined _WIN64
 		<< "[_WIN64]"
@@ -171,11 +182,11 @@ int main ( )
 		<< "[RESERVE_MEMORY_AHEAD_OF_TIME]"
 #endif
 		<< '\n';
-	std::cout << "Average: " << my_profile.mean << "ns\n";
-	std::cout << "Standard deviation: " << my_profile.standard_deviation << "ns\n";
-	std::cout << "Highest: " << my_profile.highest << "ns\n";
-	std::cout << "Lowest: " << my_profile.lowest << "ns\n";
-	std::cout << "Median: " << my_profile.median << "ns\n";
+	std::cout << "Average: " << statistics.mean << "ns\n";
+	std::cout << "Standard deviation: " << statistics.standard_deviation << "ns\n";
+	std::cout << "Highest: " << statistics.highest << "ns\n";
+	std::cout << "Lowest: " << statistics.lowest << "ns\n";
+	std::cout << "Median: " << statistics.median << "ns\n";
 	std::system ( "pause" );
 	return 0;
 }
