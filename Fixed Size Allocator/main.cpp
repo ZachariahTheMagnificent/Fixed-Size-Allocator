@@ -1,20 +1,22 @@
+#define MULTITHREADING
+//#define USE_CUSTOM_ALLOCATOR
+//#define RESERVE_MEMORY_AHEAD_OF_TIME
+
 #include <iostream>
 #include <vector>
 #include <random>
 #include <chrono>
+#if defined MULTITHREADING
+#include <thread>
+#endif
 #include "statistics.hpp"
-//#define MULTITHREADING
-#define USE_CUSTOM_ALLOCATOR
-//#define RESERVE_MEMORY_AHEAD_OF_TIME
-
-using zachariahs_world::math::statistics_type;
-using zachariahs_world::math::get_statistics;
-
 #if defined USE_CUSTOM_ALLOCATOR
 #include "fixed-size-allocator.hpp"
+
 using zachariahs_world::custom_allocators::fixed_size_allocator_type;
 #endif
-
+using zachariahs_world::math::statistics_type;
+using zachariahs_world::math::get_statistics;
 template<typename type>
 using array_type =
 #if defined USE_CUSTOM_ALLOCATOR
@@ -93,15 +95,15 @@ array_type<type> quick_sort ( const array_type<type>& array )
 	upper.reserve ( array.size ( ) );
 #endif
 
-	for ( auto i = std::size_t { } +1, size = array.size ( ); i < size; ++i )
+	for ( auto index = std::size_t { } + 1, size = array.size ( ); index < size; ++index )
 	{
-		if ( array [ i ] < middle )
+		if ( array [ index ] < middle )
 		{
-			lower.push_back ( array [ i ] );
+			lower.push_back ( array [ index ] );
 		}
 		else
 		{
-			upper.push_back ( array [ i ] );
+			upper.push_back ( array [ index ] );
 		}
 	}
 
@@ -110,52 +112,74 @@ array_type<type> quick_sort ( const array_type<type>& array )
 
 int main ( )
 {
-	constexpr auto num_tests = 10;
-	constexpr auto num_ints = 10000;
+	constexpr auto num_tests = 1000;
+	constexpr auto num_ints = 1000;
 	constexpr auto num_frames = 100;
 	constexpr auto lowest_int = int { 12 };
 	constexpr auto highest_int = int { 758 };
 
 	using clock = std::chrono::steady_clock;
 
-	auto data_points = std::vector<unsigned long long> { };
-
-	std::cout << "Circular Buffer Allocator benchmark test\n";
+	std::cout << "Fixed Size Allocator benchmark test\n";
 	std::system ( "pause" );
 	std::cout << '\n';
 
 	auto test = [ lowest_int, highest_int, num_ints, num_frames ]
 	{
-		auto rng_machine = std::mt19937 { };
-		auto int_generator = std::uniform_int_distribution<int> { lowest_int, highest_int };
-		auto ints = array_type<int> { };
-
-		for ( auto i = std::size_t { }; i < num_frames; ++i )
+#if defined MULTITHREADING
+		auto process_jobs = [ lowest_int, highest_int, num_ints, num_frames ]
+#endif
 		{
-			ints = [ &rng_machine, &int_generator, &ints, num_ints ]
+			auto rng_machine = std::mt19937 { };
+			const auto int_generator = std::uniform_int_distribution<int> { lowest_int, highest_int };
+
+			auto ints = array_type<int> { };
+			for ( auto index = std::size_t { }; index < num_frames; ++index )
 			{
-				auto random_ints = array_type<int> { };
+				ints = [ &rng_machine, &int_generator, num_ints ]
+				{
+					auto random_ints = array_type<int> { };
 #if defined RESERVE_MEMORY_AHEAD_OF_TIME
-				random_ints.reserve ( num_ints );
+					random_ints.reserve ( num_ints );
 #endif
 
-				for ( auto i = std::size_t { }; i < num_ints; ++i )
-				{
-					random_ints.push_back ( int_generator ( rng_machine ) );
-				}
+					for ( auto index = std::size_t { }; index < num_ints; ++index )
+					{
+						random_ints.push_back ( int_generator ( rng_machine ) );
+					}
 
-				return quick_sort ( random_ints );
-			} ( );
+					return quick_sort ( random_ints );
+				} ( );
+			}
 		}
+#if defined MULTITHREADING
+		;
+
+		const auto num_threads = std::thread::hardware_concurrency ( );
+
+		std::vector<std::thread> threads;
+		threads.reserve ( num_threads - 1 );
+		for ( auto index = std::size_t { }; index < num_threads - 1; ++index )
+		{
+			threads.emplace_back ( process_jobs );
+		}
+		process_jobs ( );
+
+		for ( auto& thread : threads )
+		{
+			thread.join ( );
+		}
+#endif
 	};
 
-	for ( auto i = std::size_t { }; i < num_tests; ++i )
+	auto data_points = std::vector<unsigned long long> { };
+
+	// Warmup
+	test ( );
+
+	for ( auto index = std::size_t { }; index < num_tests; ++index )
 	{
-		// Warmup
-		test ( );
-
-		// Beginning of profile
-
+		// Beginning of benchmark
 		auto start = clock::now ( );
 		test ( );
 		auto end = clock::now ( );
@@ -164,7 +188,7 @@ int main ( )
 		auto count = duration_in_nanoseconds.count ( );
 		data_points.push_back ( count );
 
-		std::cout << "Test " << i + 1 << '/' << num_tests << " done!\n";
+		std::cout << "Test " << index + 1 << '/' << num_tests << " done!\n";
 	}
 
 	const auto statistics = get_statistics ( data_points );
