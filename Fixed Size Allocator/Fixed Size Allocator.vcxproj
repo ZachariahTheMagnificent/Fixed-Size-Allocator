@@ -122,7 +122,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="fixed_size_allocator.hpp" />
+    <ClInclude Include="fixed-size-allocator.hpp" />
     <ClInclude Include="profiler.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

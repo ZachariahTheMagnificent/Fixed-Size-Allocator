@@ -6,7 +6,7 @@
 //#define RESERVE_MEMORY_AHEAD_OF_TIME
 
 #if defined USE_CUSTOM_ALLOCATOR
-#include "fixed_size_allocator.hpp"
+#include "fixed-size-allocator.hpp"
 using zachariahs_world::custom_allocators::fixed_size_allocator_type;
 #endif
 
