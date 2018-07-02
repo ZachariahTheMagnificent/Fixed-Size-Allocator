@@ -2,6 +2,7 @@
 #include <vector>
 #include <random>
 #include "profiler.hpp"
+#define MULTITHREADING
 //#define USE_CUSTOM_ALLOCATOR
 //#define RESERVE_MEMORY_AHEAD_OF_TIME
 
@@ -159,6 +160,9 @@ int main ( )
 	std::cout << "Programmed with: "
 #if defined _WIN64
 		<< "[_WIN64]"
+#endif
+#if defined MULTITHREADING
+		<< "[MULTITHREADING]"
 #endif
 #if defined USE_CUSTOM_ALLOCATOR
 		<< "[USE_CUSTOM_ALLOCATOR]"
